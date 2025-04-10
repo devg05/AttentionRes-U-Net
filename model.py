@@ -52,6 +52,9 @@ class Decoder(nn.Module):
 
         self.upsample = nn.ConvTranspose2d(up_in_channels, up_in_channels // 2, kernel_size=3, stride=2, padding=1, output_padding=1)
 
+        up_out_channels = up_in_channels // 2
+        self.attention_gate = AttentionGate([up_out_channels, x_in_channels], up_out_channels)
+        
         in_channels = up_in_channels // 2 + x_in_channels
         out_channels = in_channels // 2
 
@@ -59,7 +62,8 @@ class Decoder(nn.Module):
 
     def forward(self, skip_connection, x):
         x = self.upsample(x)
-        x = AttentionGate([x.shape[1], skip_connection.shape[1]], x.shape[1])(x, skip_connection)
+        # x = AttentionGate([x.shape[1], skip_connection.shape[1]], x.shape[1])(x, skip_connection)
+        x = self.attention_gate(x, skip_connection)
         return self.layers(torch.cat([skip_connection, x], dim=1))
 
 
@@ -96,8 +100,8 @@ class AttenResUnet(nn.Module):
         self.resize = nn.ConvTranspose2d(48, 16, kernel_size=3, stride=2, padding=1, output_padding=1)
 
         self.final_layer = nn.Sequential(
-            nn.Conv2d(16, 21, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(21),
+            nn.Conv2d(16, 1, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(1),
             nn.ReLU(inplace=True),
             )
 
